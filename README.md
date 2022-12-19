@@ -1,3 +1,24 @@
+# Pimcore use of this tool
+
+All of this are done with the restore_object_stage user or with the restore_object_prod user/profile
+
+Steps to restore data:
+1. create an inventory to work with all tenant objects 
+- create an inventory for a particular tenant
+2. restore/resurface those objects from Glaciar so that they can be copied/downloaded
+- run batch to restore the objects
+3. copy the objects to the bucket so that they are gonna be in a Standard storage class
+this copy is also restoring the objects versions to a particular moment in time when we need to the tenant to be
+```
+python3 s3-pit-rest -b saas-tenants-stage-replica-ver-public -B saas-tenants-stage-replica-ver-public -p saas-professional-stage/asset/restore_this/ -t "2022-11-30T13:14:57.000Z" -e -v
+```
+4. copy the objects back to the original bucket
+```
+aws s3 cp s3://saas-tenants-stage-replica-ver-public/saas-professional-stage/asset/restore_this \
+       s3://saas-tenants-stage-ver-public/saas-professional-stage/asset/restore_this/ \
+       --source-region eu-west-1 --region eu-central-1 --profile restore-objects-stage --storage-class STANDARD --recursive
+```
+
 # S3 point in time restore
 
 This is the repository for s3-pit-restore, a point in time restore tool
