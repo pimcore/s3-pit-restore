@@ -198,6 +198,7 @@ def handled_by_glacier(obj):
         return True
     elif (obj["StorageClass"] == "DEEP_ARCHIVE" or obj["StorageClass"] == "GLACIER") and args.enable_glacier:
         s3 = boto3.resource('s3', endpoint_url=args.endpoint_url)
+        print_obj(obj, optional_message='needs restore')
         s3_obj = s3.Object(args.bucket, obj["Key"])
         if s3_obj.restore is None:
             print_obj(obj, optional_message='requesting')
@@ -216,9 +217,11 @@ def handled_by_glacier(obj):
         elif 'ongoing-request="false"' in s3_obj.restore:
             return False
     else:
+        print("glacier false")
         return False
 
 def handled_by_standard(obj):
+    print("handled_by_standard")
     if args.dry_run:
         print_obj(obj)
     else:
@@ -238,6 +241,7 @@ def handled_by_standard(obj):
     return True
 
 def handled_by_copy(obj):
+    print("handled_by_copy")
     if args.dry_run:
         print_obj(obj)
         return True
@@ -271,6 +275,7 @@ def s3_copy_object(obj):
     client.copy(Bucket=args.dest_bucket, CopySource=copy_source, Key=get_key(obj), ExtraArgs=extra_args)
 
 def handled_by_delete(obj):
+    print("handled_by_delete")
     if args.dry_run:
         print_obj(obj)
         return True
@@ -283,6 +288,7 @@ def s3_delete_object(obj):
     client.delete_object(Bucket=args.dest_bucket, Key=obj["Key"])
 
 def do_restore():
+
     pit_start_date = (parse(args.from_timestamp) if args.from_timestamp else datetime.fromtimestamp(0, timezone.utc))
     pit_end_date = (parse(args.timestamp) if args.timestamp else datetime.now(timezone.utc))
     global client
@@ -348,14 +354,16 @@ def do_restore():
             # This version needs to be restored..
             last_obj = obj
 
-            if handled_by_glacier(obj):
-                continue
-
+            # I commented this so that objects that are not in Standard can be copied as well
+            
+            #if handled_by_glacier(obj):
+            #    continue
+                
             if args.dest_bucket is not None:
                 obj_needs_be_deleted.pop(obj["Key"], None)
                 handled_by_copy(obj)
                 continue
-
+            print("do_restore_5")
             if not handled_by_standard(obj):
                 return
 
